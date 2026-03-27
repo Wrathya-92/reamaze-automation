@@ -16,7 +16,9 @@ Customer message → Reamaze webhook → This server
 
 **Tier 2** — Detailed, knowledge-backed response using your SOPs, guidelines, and docs. During business hours (11am-7pm Bogota time). Starts in review mode, switches to auto once response quality trust rate exceeds 98%.
 
-## Quick Install (new machine)
+## Quick Install
+
+### macOS (MacBook Air)
 
 ```bash
 git clone https://github.com/Wrathya-92/reamaze-automation.git
@@ -24,14 +26,32 @@ cd reamaze-automation
 ./setup.sh
 ```
 
-The setup script will automatically:
+### Windows 11
+
+```powershell
+git clone https://github.com/Wrathya-92/reamaze-automation.git
+cd reamaze-automation
+powershell -ExecutionPolicy Bypass -File setup.ps1
+```
+
+Both setup scripts will automatically:
 - Install Ollama (if not present)
 - Pull the AI model (Mistral)
 - Install Node.js (if not present)
 - Install dependencies and build
 - Create `.env` from template
 
-Then edit `.env` with your credentials and run `npm start`.
+Then edit `.env` with your credentials and start:
+
+```bash
+# macOS
+./start.sh
+
+# Windows
+powershell -File start.ps1
+```
+
+The start scripts ensure Ollama is running before launching the server.
 
 ## Manual Setup
 
