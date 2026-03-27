@@ -4,6 +4,7 @@ import {
   getResponse,
   approveResponse,
   rejectResponse,
+  correctResponse,
   getMetrics,
 } from '../queue/review-queue';
 
@@ -22,6 +23,20 @@ export async function handleApprove(req: Request, res: Response) {
     const { reviewedBy } = req.body;
     await approveResponse(id, reviewedBy || 'anonymous');
     res.json({ status: 'approved', id });
+  } catch (error: any) {
+    res.status(404).json({ error: error.message });
+  }
+}
+
+export async function handleCorrect(req: Request, res: Response) {
+  try {
+    const id = req.params.id as string;
+    const { reviewedBy, correctedResponse } = req.body;
+    if (!correctedResponse) {
+      return res.status(400).json({ error: 'correctedResponse is required' });
+    }
+    await correctResponse(id, reviewedBy || 'anonymous', correctedResponse);
+    res.json({ status: 'corrected', id });
   } catch (error: any) {
     res.status(404).json({ error: error.message });
   }

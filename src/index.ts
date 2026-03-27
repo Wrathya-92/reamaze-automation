@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import { config } from './config';
 import { handleWebhook } from './handlers/webhook';
 import {
@@ -6,10 +7,17 @@ import {
   handleGetMetrics,
   handleApprove,
   handleReject,
+  handleCorrect,
 } from './handlers/review-api';
+import {
+  handleAcquireSession,
+  handlePingSession,
+  handleReleaseSession,
+} from './handlers/session';
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Health check
 app.get('/health', (_req, res) => {
@@ -24,6 +32,12 @@ app.get('/api/queue/pending', handleGetPending);
 app.get('/api/queue/metrics', handleGetMetrics);
 app.post('/api/queue/:id/approve', handleApprove);
 app.post('/api/queue/:id/reject', handleReject);
+app.post('/api/queue/:id/correct', handleCorrect);
+
+// Session management
+app.post('/api/session/acquire', handleAcquireSession);
+app.post('/api/session/ping', handlePingSession);
+app.post('/api/session/release', handleReleaseSession);
 
 app.listen(config.server.port, () => {
   console.log(`
@@ -35,7 +49,7 @@ app.listen(config.server.port, () => {
 ║  Business Hours:  ${config.businessHours.start}:00 - ${config.businessHours.end}:00 ${config.businessHours.timezone}  ║
 ╚══════════════════════════════════════════════╝
 
-Webhook URL: http://localhost:${config.server.port}/webhook/reamaze
-Review Queue: http://localhost:${config.server.port}/api/queue/pending
+Review UI:    http://localhost:${config.server.port}
+Webhook URL:  http://localhost:${config.server.port}/webhook/reamaze
   `);
 });

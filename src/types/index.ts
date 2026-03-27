@@ -24,7 +24,7 @@ export interface QueuedResponse {
   customerMessage: string;
   tier1Response: string;
   tier2Response: string;
-  status: 'pending_review' | 'approved' | 'sent' | 'rejected';
+  status: 'pending_review' | 'approved' | 'sent' | 'rejected' | 'corrected';
   createdAt: Date;
   reviewedAt?: Date;
   reviewedBy?: string;
@@ -40,5 +40,6 @@ export interface ResponseMetrics {
   totalResponses: number;
   approvedResponses: number;
   rejectedResponses: number;
+  correctedResponses: number;
   trustRate: number;
 }

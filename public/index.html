@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reamaze CX Review Queue</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242733;
+      --border: #2e3140;
+      --text: #e4e6ed;
+      --text-muted: #8b8fa3;
+      --accent: #6c63ff;
+      --green: #34d399;
+      --green-bg: #34d39918;
+      --amber: #fbbf24;
+      --amber-bg: #fbbf2418;
+      --red: #f87171;
+      --red-bg: #f8717118;
+      --customer-bg: #1e293b;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header h1 .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      display: inline-block;
+    }
+
+    .header h1 .dot.inactive { background: var(--red); }
+
+    .metrics {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+    }
+
+    .metric {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+    }
+
+    .metric .value {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .trust-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .trust-badge.good { background: var(--green-bg); color: var(--green); }
+    .trust-badge.warn { background: var(--amber-bg); color: var(--amber); }
+    .trust-badge.low { background: var(--red-bg); color: var(--red); }
+
+    /* Main content */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Locked overlay */
+    .locked-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 17, 23, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      gap: 16px;
+    }
+
+    .locked-overlay h2 {
+      font-size: 20px;
+      color: var(--amber);
+    }
+
+    .locked-overlay p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .locked-overlay button {
+      margin-top: 8px;
+      padding: 10px 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .locked-overlay button:hover { border-color: var(--accent); }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state h2 {
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .empty-state p { font-size: 14px; }
+
+    .pulse {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+      margin-left: 8px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Review card */
+    .review-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header .subject {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .card-header .queue-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--surface2);
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    .card-body { padding: 20px; }
+
+    /* Message bubbles */
+    .message-section {
+      margin-bottom: 20px;
+    }
+
+    .message-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .customer-message {
+      background: var(--customer-bg);
+      border-left: 3px solid var(--accent);
+      padding: 14px 16px;
+      border-radius: 0 8px 8px 0;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .tier1-message {
+      background: var(--surface2);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+    }
+
+    .tier1-toggle {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tier1-toggle .arrow {
+      transition: transform 0.2s;
+      font-size: 10px;
+    }
+
+    .tier1-toggle .arrow.open { transform: rotate(90deg); }
+
+    .tier1-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .tier1-content.open { max-height: 500px; }
+
+    /* Suggested response */
+    .suggested-response {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      min-height: 120px;
+    }
+
+    .response-textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 2px solid var(--amber);
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+      font-family: inherit;
+      min-height: 150px;
+      resize: vertical;
+      outline: none;
+    }
+
+    .response-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    /* Actions */
+    .actions {
+      display: flex;
+      gap: 12px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-approve {
+      background: var(--green);
+      color: #000;
+    }
+
+    .btn-approve:hover:not(:disabled) { filter: brightness(1.1); }
+
+    .btn-correct {
+      background: var(--amber);
+      color: #000;
+    }
+
+    .btn-correct:hover:not(:disabled) { filter: brightness(1.1); }
+
+    .btn-cancel {
+      background: var(--surface2);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-cancel:hover:not(:disabled) { border-color: var(--text-muted); }
+
+    .btn-reject {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid transparent;
+      flex: 0.4;
+    }
+
+    .btn-reject:hover:not(:disabled) { border-color: var(--red); }
+
+    /* Loading spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Locked overlay -->
+  <div id="lockedOverlay" class="locked-overlay" style="display: none;">
+    <h2>Session In Use</h2>
+    <p>Another reviewer is currently active. Only one session is allowed at a time.</p>
+    <button onclick="tryAcquireSession()">Retry</button>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>
+      <span id="statusDot" class="dot"></span>
+      Reamaze Review Queue
+    </h1>
+    <div class="metrics">
+      <div class="metric">
+        Reviewed: <span id="totalCount" class="value">0</span>
+      </div>
+      <div class="metric">
+        Approved: <span id="approvedCount" class="value">0</span>
+      </div>
+      <div class="metric">
+        Corrected: <span id="correctedCount" class="value">0</span>
+      </div>
+      <span id="trustBadge" class="trust-badge good">Trust: --%</span>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="container">
+    <!-- Empty state -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="icon">&#9993;</div>
+      <h2>No messages pending review</h2>
+      <p>Waiting for new messages<span class="pulse"></span></p>
+    </div>
+
+    <!-- Review card -->
+    <div id="reviewCard" class="review-card" style="display: none;">
+      <div class="card-header">
+        <span id="subject" class="subject"></span>
+        <span id="queueCount" class="queue-count"></span>
+      </div>
+      <div class="card-body">
+        <!-- Customer message -->
+        <div class="message-section">
+          <div class="message-label">Customer Message</div>
+          <div id="customerMessage" class="customer-message"></div>
+        </div>
+
+        <!-- Tier 1 auto-reply (collapsible) -->
+        <div class="message-section">
+          <div class="message-label tier1-toggle" onclick="toggleTier1()">
+            <span id="tier1Arrow" class="arrow">&#9654;</span>
+            Auto-reply already sent (Tier 1)
+          </div>
+          <div id="tier1Content" class="tier1-content">
+            <div id="tier1Message" class="tier1-message"></div>
+          </div>
+        </div>
+
+        <!-- Suggested Tier 2 response -->
+        <div class="message-section">
+          <div class="message-label">Suggested Response (Tier 2)</div>
+          <div id="suggestedResponse" class="suggested-response"></div>
+          <textarea id="editResponse" class="response-textarea" style="display: none;"></textarea>
+        </div>
+      </div>
+
+      <!-- Actions: default mode -->
+      <div id="defaultActions" class="actions">
+        <button class="btn btn-approve" onclick="approveResponse()">
+          Approve &amp; Send
+        </button>
+        <button class="btn btn-correct" onclick="enterCorrectionMode()">
+          Correct
+        </button>
+        <button class="btn btn-reject" onclick="rejectResponse()">
+          Discard
+        </button>
+      </div>
+
+      <!-- Actions: correction mode -->
+      <div id="correctionActions" class="actions" style="display: none;">
+        <button class="btn btn-approve" onclick="sendCorrected()">
+          Send Corrected
+        </button>
+        <button class="btn btn-cancel" onclick="exitCorrectionMode()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let sessionToken = sessionStorage.getItem('reviewSessionToken');
+  let currentItem = null;
+  let isEditing = false;
+  let pingInterval = null;
+  let pollInterval = null;
+
+  // --- Session management ---
+
+  async function tryAcquireSession() {
+    try {
+      const res = await fetch('/api/session/acquire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: sessionToken }),
+      });
+      const data = await res.json();
+
+      if (data.status === 'acquired') {
+        sessionToken = data.token;
+        sessionStorage.setItem('reviewSessionToken', sessionToken);
+        document.getElementById('lockedOverlay').style.display = 'none';
+        document.getElementById('statusDot').className = 'dot';
+        startPinging();
+        startPolling();
+      } else {
+        document.getElementById('lockedOverlay').style.display = 'flex';
+        document.getElementById('statusDot').className = 'dot inactive';
+      }
+    } catch (e) {
+      console.error('Session acquire failed:', e);
+      document.getElementById('lockedOverlay').style.display = 'flex';
+    }
+  }
+
+  function startPinging() {
+    if (pingInterval) clearInterval(pingInterval);
+    pingInterval = setInterval(async () => {
+      try {
+        await fetch('/api/session/ping', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: sessionToken }),
+        });
+      } catch (e) { /* ignore */ }
+    }, 15000);
+  }
+
+  function releaseSession() {
+    if (sessionToken) {
+      navigator.sendBeacon('/api/session/release',
+        new Blob([JSON.stringify({ token: sessionToken })], { type: 'application/json' })
+      );
+    }
+  }
+
+  window.addEventListener('beforeunload', releaseSession);
+
+  // --- Polling ---
+
+  function startPolling() {
+    fetchPending();
+    fetchMetrics();
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(() => {
+      fetchPending();
+      fetchMetrics();
+    }, 5000);
+  }
+
+  async function fetchPending() {
+    try {
+      const res = await fetch('/api/queue/pending');
+      const data = await res.json();
+
+      if (data.count === 0) {
+        currentItem = null;
+        document.getElementById('reviewCard').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+      } else {
+        currentItem = data.responses[0];
+        renderCard(currentItem, data.count);
+        document.getElementById('reviewCard').style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
+      }
+    } catch (e) {
+      console.error('Poll failed:', e);
+    }
+  }
+
+  async function fetchMetrics() {
+    try {
+      const res = await fetch('/api/queue/metrics');
+      const data = await res.json();
+
+      document.getElementById('totalCount').textContent = data.totalResponses;
+      document.getElementById('approvedCount').textContent = data.approvedResponses;
+      document.getElementById('correctedCount').textContent = data.correctedResponses;
+
+      const badge = document.getElementById('trustBadge');
+      const rate = data.totalResponses > 0 ? data.trustRate.toFixed(1) : '--';
+      badge.textContent = `Trust: ${rate}%`;
+
+      if (data.totalResponses === 0) {
+        badge.className = 'trust-badge good';
+      } else if (data.trustRate >= 90) {
+        badge.className = 'trust-badge good';
+      } else if (data.trustRate >= 70) {
+        badge.className = 'trust-badge warn';
+      } else {
+        badge.className = 'trust-badge low';
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  // --- Rendering ---
+
+  function renderCard(item, totalPending) {
+    document.getElementById('subject').textContent =
+      item.conversationSlug || 'Conversation';
+    document.getElementById('queueCount').textContent =
+      `${totalPending} pending`;
+    document.getElementById('customerMessage').textContent =
+      item.customerMessage;
+    document.getElementById('tier1Message').textContent =
+      item.tier1Response;
+    document.getElementById('suggestedResponse').textContent =
+      item.tier2Response;
+    document.getElementById('editResponse').value =
+      item.tier2Response;
+
+    exitCorrectionMode();
+  }
+
+  // --- Tier 1 toggle ---
+
+  function toggleTier1() {
+    const content = document.getElementById('tier1Content');
+    const arrow = document.getElementById('tier1Arrow');
+    content.classList.toggle('open');
+    arrow.classList.toggle('open');
+  }
+
+  // --- Actions ---
+
+  async function approveResponse() {
+    if (!currentItem) return;
+    disableButtons(true);
+
+    try {
+      await fetch(`/api/queue/${currentItem.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewedBy: 'reviewer' }),
+      });
+      await fetchPending();
+      await fetchMetrics();
+    } catch (e) {
+      console.error('Approve failed:', e);
+    }
+
+    disableButtons(false);
+  }
+
+  function enterCorrectionMode() {
+    isEditing = true;
+    document.getElementById('suggestedResponse').style.display = 'none';
+    document.getElementById('editResponse').style.display = 'block';
+    document.getElementById('defaultActions').style.display = 'none';
+    document.getElementById('correctionActions').style.display = 'flex';
+    document.getElementById('editResponse').focus();
+  }
+
+  function exitCorrectionMode() {
+    isEditing = false;
+    document.getElementById('suggestedResponse').style.display = 'block';
+    document.getElementById('editResponse').style.display = 'none';
+    document.getElementById('defaultActions').style.display = 'flex';
+    document.getElementById('correctionActions').style.display = 'none';
+    if (currentItem) {
+      document.getElementById('editResponse').value = currentItem.tier2Response;
+    }
+  }
+
+  async function sendCorrected() {
+    if (!currentItem) return;
+    const correctedText = document.getElementById('editResponse').value.trim();
+    if (!correctedText) return;
+    disableButtons(true);
+
+    try {
+      await fetch(`/api/queue/${currentItem.id}/correct`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewedBy: 'reviewer',
+          correctedResponse: correctedText,
+        }),
+      });
+      await fetchPending();
+      await fetchMetrics();
+    } catch (e) {
+      console.error('Correct failed:', e);
+    }
+
+    disableButtons(false);
+  }
+
+  async function rejectResponse() {
+    if (!currentItem) return;
+    disableButtons(true);
+
+    try {
+      await fetch(`/api/queue/${currentItem.id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewedBy: 'reviewer' }),
+      });
+      await fetchPending();
+      await fetchMetrics();
+    } catch (e) {
+      console.error('Reject failed:', e);
+    }
+
+    disableButtons(false);
+  }
+
+  function disableButtons(disabled) {
+    document.querySelectorAll('.btn').forEach(b => b.disabled = disabled);
+  }
+
+  // --- Init ---
+  tryAcquireSession();
+</script>
+</body>
+</html>

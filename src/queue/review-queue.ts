@@ -10,6 +10,7 @@ let metrics: ResponseMetrics = {
   totalResponses: 0,
   approvedResponses: 0,
   rejectedResponses: 0,
+  correctedResponses: 0,
   trustRate: 0,
 };
 
@@ -58,6 +59,24 @@ export function rejectResponse(id: string, reviewedBy: string): void {
   metrics.trustRate = (metrics.approvedResponses / metrics.totalResponses) * 100;
 
   console.log(`[Queue] Rejected response ${id}. Trust rate: ${metrics.trustRate.toFixed(1)}%`);
+}
+
+export async function correctResponse(id: string, reviewedBy: string, correctedText: string): Promise<void> {
+  const response = queue.get(id);
+  if (!response) throw new Error(`Response ${id} not found`);
+
+  response.status = 'corrected';
+  response.reviewedAt = new Date();
+  response.reviewedBy = reviewedBy;
+
+  // Send the corrected response via Reamaze
+  await reamaze.sendMessage(response.conversationSlug, correctedText);
+
+  metrics.totalResponses++;
+  metrics.correctedResponses++;
+  metrics.trustRate = (metrics.approvedResponses / metrics.totalResponses) * 100;
+
+  console.log(`[Queue] Corrected & sent response ${id}. Trust rate: ${metrics.trustRate.toFixed(1)}%`);
 }
 
 export function getMetrics(): ResponseMetrics {
