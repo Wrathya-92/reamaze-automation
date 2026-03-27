@@ -9,8 +9,10 @@ export const config = {
     webhookSecret: process.env.REAMAZE_WEBHOOK_SECRET,
     baseUrl: `https://${process.env.REAMAZE_BRAND}.reamaze.com/api/v1`,
   },
-  anthropic: {
-    apiKey: process.env.ANTHROPIC_API_KEY!,
+  ollama: {
+    baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+    tier1Model: process.env.OLLAMA_TIER1_MODEL || 'mistral',
+    tier2Model: process.env.OLLAMA_TIER2_MODEL || 'mistral',
   },
   server: {
     port: parseInt(process.env.PORT || '3000', 10),

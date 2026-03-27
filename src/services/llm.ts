@@ -1,7 +1,42 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config';
 
-const client = new Anthropic({ apiKey: config.anthropic.apiKey });
+interface OllamaMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface OllamaResponse {
+  message: { content: string };
+}
+
+async function ollamaChat(
+  model: string,
+  system: string,
+  userMessage: string
+): Promise<string> {
+  const messages: OllamaMessage[] = [
+    { role: 'system', content: system },
+    { role: 'user', content: userMessage },
+  ];
+
+  const response = await fetch(`${config.ollama.baseUrl}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages,
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Ollama error ${response.status}: ${text}`);
+  }
+
+  const data = (await response.json()) as OllamaResponse;
+  return data.message.content;
+}
 
 const TIER1_SYSTEM_PROMPT = `You are a friendly and professional customer support assistant.
 Your role is to provide an immediate, helpful response to customer inquiries.
@@ -32,20 +67,11 @@ export async function generateTier1Response(
   customerMessage: string,
   conversationHistory: string
 ): Promise<string> {
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 500,
-    system: TIER1_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: `Conversation history:\n${conversationHistory}\n\nLatest customer message:\n${customerMessage}\n\nProvide a quick, helpful initial response.`,
-      },
-    ],
-  });
-
-  const block = response.content[0];
-  return block.type === 'text' ? block.text : '';
+  return ollamaChat(
+    config.ollama.tier1Model,
+    TIER1_SYSTEM_PROMPT,
+    `Conversation history:\n${conversationHistory}\n\nLatest customer message:\n${customerMessage}\n\nProvide a quick, helpful initial response.`
+  );
 }
 
 export async function generateTier2Response(
@@ -54,14 +80,10 @@ export async function generateTier2Response(
   knowledgeContext: string,
   tier1Response: string
 ): Promise<string> {
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1500,
-    system: TIER2_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: `## Internal Knowledge Base Context
+  return ollamaChat(
+    config.ollama.tier2Model,
+    TIER2_SYSTEM_PROMPT,
+    `## Internal Knowledge Base Context
 ${knowledgeContext}
 
 ## Conversation History
@@ -74,11 +96,6 @@ ${customerMessage}
 ${tier1Response}
 
 ---
-Craft a thorough follow-up response that builds on the initial reply. Use the knowledge base to provide accurate, detailed guidance. Do not repeat what was already said in the initial response — add value with specifics, next steps, and policy-backed answers.`,
-      },
-    ],
-  });
-
-  const block = response.content[0];
-  return block.type === 'text' ? block.text : '';
+Craft a thorough follow-up response that builds on the initial reply. Use the knowledge base to provide accurate, detailed guidance. Do not repeat what was already said in the initial response — add value with specifics, next steps, and policy-backed answers.`
+  );
 }

@@ -1,6 +1,6 @@
 # Reamaze CX Automation
 
-Two-tier automated customer support system powered by Claude AI.
+Two-tier automated customer support system powered by local AI (Ollama).
 
 ## How it works
 
@@ -16,11 +16,29 @@ Customer message → Reamaze webhook → This server
 
 **Tier 2** — Detailed, knowledge-backed response using your SOPs, guidelines, and docs. During business hours (11am-7pm Bogota time). Starts in review mode, switches to auto once response quality trust rate exceeds 98%.
 
-## Setup
+## Quick Install (new machine)
 
-1. Copy `.env.example` to `.env` and fill in your credentials
-2. Add your SOPs and docs to `knowledge-base/` as `.md` or `.txt` files
-3. Configure the Reamaze webhook to point to `https://your-server/webhook/reamaze`
+```bash
+git clone https://github.com/Wrathya-92/reamaze-automation.git
+cd reamaze-automation
+./setup.sh
+```
+
+The setup script will automatically:
+- Install Ollama (if not present)
+- Pull the AI model (Mistral)
+- Install Node.js (if not present)
+- Install dependencies and build
+- Create `.env` from template
+
+Then edit `.env` with your credentials and run `npm start`.
+
+## Manual Setup
+
+1. Install [Ollama](https://ollama.com) and pull a model: `ollama pull mistral`
+2. Copy `.env.example` to `.env` and fill in your credentials
+3. Add your SOPs and docs to `knowledge-base/` as `.md` or `.txt` files
+4. Configure the Reamaze webhook to point to `https://your-server/webhook/reamaze`
 
 ```bash
 npm install
@@ -46,7 +64,9 @@ npm start      # Production
 | `REAMAZE_API_TOKEN` | Reamaze API token |
 | `REAMAZE_BRAND` | Your Reamaze brand slug |
 | `REAMAZE_EMAIL` | Reamaze login email |
-| `ANTHROPIC_API_KEY` | Claude API key |
+| `OLLAMA_BASE_URL` | Ollama URL (default: http://localhost:11434) |
+| `OLLAMA_TIER1_MODEL` | Model for instant replies (default: mistral) |
+| `OLLAMA_TIER2_MODEL` | Model for elaborated replies (default: mistral) |
 | `TIER2_MODE` | `review` (default) or `auto` |
 | `TRUST_THRESHOLD` | % threshold to suggest auto mode (default: 98) |
 | `BUSINESS_HOURS_START` | Start hour in local tz (default: 11) |

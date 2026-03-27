@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import { ReamazeWebhookPayload } from '../types';
 import { ReamazeClient } from '../services/reamaze';
-import { generateTier1Response, generateTier2Response } from '../services/claude';
+import { generateTier1Response, generateTier2Response } from '../services/llm';
 import { KnowledgeBase } from '../services/knowledge-base';
 import { isBusinessHours } from '../services/scheduler';
 import { enqueueResponse, shouldAutoSend } from '../queue/review-queue';
